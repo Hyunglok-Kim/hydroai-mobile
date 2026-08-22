@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-shell="3019a271">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1a17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HydroAI">
+<title>HydroAI 모바일</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<style>html{background:#1b1a17}@media(prefers-color-scheme:light){html:not([data-theme=dark]){background:#f0eee6}}</style>
+<script>
+/* 홈 화면 앱(iOS standalone)은 이 HTML 을 오래 캐시한다 — 그러면 ?v=해시가 옛것이라
+   고친 코드가 폰에 영영 안 온다. 그래서 코드(css/js)는 여기서 매번 새로 받아 붙인다.
+   HTML 자체가 낡은 경우는 m.js 가 version.json 과 대조해 한 번만 재적재한다. */
+(function () {
+  var t = "?t=" + Date.now();
+  var l = document.createElement("link");
+  l.rel = "stylesheet"; l.href = "m.css" + t;
+  document.head.appendChild(l);
+  var s = document.createElement("script");
+  s.src = "m.js" + t; s.defer = true;
+  document.head.appendChild(s);
+})();
+</script>
+</head>
+<body>
+
+<!-- 잠금 화면 — 얼굴을 누르고 본인 대시보드 비밀번호로 연다 -->
+<div id="lock" hidden>
+  <div class="lock-card">
+    <h1 class="brand">HydroAI</h1>
+    <p class="lock-sub" id="lockHint"></p>
+
+    <div id="faceGrid" class="face-grid"></div>
+
+    <form id="lockForm" hidden>
+      <div class="pw-who">
+        <img id="pwFace" alt="" hidden><span id="pwEmoji" hidden>👤</span>
+        <div><b id="pwName"></b><br><span id="pwNameEn" class="muted"></span></div>
+        <button type="button" id="pwBack" class="chip-btn"></button>
+      </div>
+      <div class="pw-row">
+        <input id="lockPw" type="password" inputmode="text" autocomplete="current-password"
+               autocapitalize="off" spellcheck="false">
+        <button id="lockBtn" type="submit"></button>
+      </div>
+      <p class="lock-note" id="lockNote"></p>
+    </form>
+    <p id="lockMsg" class="lock-msg"></p>
+    <button id="lockLang" class="lock-lang" type="button"></button>
+  </div>
+</div>
+
+<!-- 본 화면 -->
+<div id="app" hidden>
+  <header id="top">
+    <div class="top-title">
+      <span class="brand">HydroAI</span><span class="brand-sub">mobile</span>
+    </div>
+    <div class="top-actions">
+      <span id="genAt" class="gen-at"></span>
+      <button id="btnLang" class="icon-btn lang-btn" title="Language"></button>
+      <button id="btnRefresh" class="icon-btn" title="새로고침">↻</button>
+      <button id="btnTheme" class="icon-btn" title="테마">◐</button>
+    </div>
+  </header>
+
+  <div id="staleBar" hidden></div>
+
+  <main id="main">
+    <!-- 📅 캘린더 — 날짜를 누르면 그날 일정 있는 얼굴들이 뜬다 -->
+    <section id="view-cal" class="view">
+      <div class="cal-head card">
+        <button id="wkPrev" class="icon-btn">‹</button>
+        <div class="cal-month"><span id="calMonth"></span>
+          <button id="btnToday" class="chip-btn"></button>
+          <button id="btnAdd" class="chip-btn add" hidden>＋</button>
+        </div>
+        <button id="wkNext" class="icon-btn">›</button>
+      </div>
+      <div id="weekStrip" class="week-strip"></div>
+      <div id="dayList" class="day-list"></div>
+    </section>
+
+    <!-- 🙋 내 공간 (조회 전용) -->
+    <section id="view-my" class="view" hidden>
+      <div id="myList"></div>
+    </section>
+
+    <!-- 🖥️ 서버 — 연구실 GPU·CPU 서버 현황 (전원 열람) -->
+    <section id="view-srv" class="view" hidden><div id="srvList"></div></section>
+
+    <!-- ☰ 더보기 -->
+    <!-- 🧑‍🔬 멤버 · ✅ 승인 — PI 전용 -->
+    <section id="view-mem" class="view" hidden><div id="memList"></div></section>
+    <section id="view-ap" class="view" hidden><div id="apList"></div></section>
+    <section id="view-gr" class="view" hidden><div id="grList"></div></section>
+    <section id="view-more" class="view" hidden>
+      <div class="more-note card"><p id="moreNote"></p></div>
+      <div id="dashList" class="card list"></div>
+      <div class="card list" id="toolList">
+        <div class="row" id="toolBar">
+          <span class="row-ico">↕</span>
+          <span class="row-main" id="barLbl"></span>
+          <span class="bar-adj">
+            <button id="barUp" type="button">▲</button>
+            <b id="barVal">0</b>
+            <button id="barDown" type="button">▼</button>
+          </span>
+        </div>
+        <button class="row" id="toolRefresh"><span class="row-ico">↻</span><span class="row-main"></span></button>
+        <button class="row" id="toolLang"><span class="row-ico">🌐</span><span class="row-main"></span></button>
+        <button class="row" id="toolTheme"><span class="row-ico">◐</span><span class="row-main"></span></button>
+        <button class="row" id="toolLock"><span class="row-ico">🚪</span><span class="row-main"></span></button>
+      </div>
+      <p class="more-meta" id="moreMeta"></p>
+    </section>
+  </main>
+
+  <nav id="tabbar">
+    <button class="tab on" data-view="cal"><span class="tab-ico">📅</span><span class="tab-t"></span></button>
+    <button class="tab" data-view="my"><span class="tab-ico">🙋</span><span class="tab-t"></span></button>
+    <!-- 🖥️ 서버 — 발행본에 서버 현황이 실려 있을 때만 (m.js renderServers) -->
+    <button class="tab" data-view="srv" id="tabSrv" hidden><span class="tab-ico">🖥️</span><span class="tab-t"></span></button>
+    <!-- ✅ 승인 · 🔭 과제찾기 — PI 개인 블록에 있을 때만 보인다 (학생 폰에선 안 뜸) -->
+    <button class="tab" data-view="mem" id="tabMem" hidden><span class="tab-ico">🧑‍🔬</span><span class="tab-t"></span></button>
+    <button class="tab" data-view="ap" id="tabAp" hidden><span class="tab-ico">✅</span><span class="tab-t"></span><span id="apBadge" class="tab-badge" hidden></span></button>
+    <button class="tab" data-view="gr" id="tabGr" hidden><span class="tab-ico">🔭</span><span class="tab-t"></span></button>
+    <button class="tab" data-view="more"><span class="tab-ico">☰</span><span class="tab-t"></span></button>
+  </nav>
+</div>
+
+<div id="toast" hidden></div>
+
+<!-- 아래에서 올라오는 상세 시트 (하나를 돌려 쓴다) -->
+<div id="sheetWrap" hidden>
+  <div id="sheetBack"></div>
+  <div id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+</body>
+</html>
