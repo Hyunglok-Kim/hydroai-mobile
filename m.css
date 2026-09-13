@@ -1,0 +1,659 @@
+/* HydroAI 모바일 — warm ivory · charcoal ink · terracotta accent · serif headlines
+   규칙: 카테고리 색은 절대 색만으로 뜻을 싣지 않는다 — 항상 심볼+라벨을 같이 쓴다. */
+
+:root {
+  --page: #f0eee6; --surface: #faf9f5; --ink: #141413; --ink2: #57554c;
+  --hairline: #e2ded1; --accent: #ae562f; --accent-ink: #fff;
+  --wash: rgba(20,20,19,.05); --shadow: 0 8px 28px rgba(20,20,19,.10);
+  --cat-conference: #3a7bd5; --cat-lab: #ae562f; --cat-exam: #8e44ad;
+  --cat-academic: #8a6d1c; --cat-travel: #0e8f8f; --cat-deadline: #c0392b;
+  --cat-holiday: #2e9e5b; --cat-away: #c0392b; --cat-other: #8a877d;
+  --cat-class: #8b5cf6; --apple: #5b7fb5; --good: #2e9e5b; --warnbg: #f6e7c6;
+  --serif: "Iowan Old Style", Palatino, Georgia, "Apple SD Gothic Neo", "Malgun Gothic", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* 주간 파이 시리즈 — dataviz 검증 통과 팔레트 (조각 순서 고정) */
+  --s-meeting: #4a3aa7; --s-research: #eb6834; --s-study: #2a78d6; --s-away: #1baf7a;
+  --s-class: #eda100; --s-workout: #e87ba4; --s-chore: #008300; --s-other: #8a877d;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #1b1a17; --surface: #262521; --ink: #f0eee6; --ink2: #b7b3a6;
+    --hairline: #3a3831; --accent: #d97757; --accent-ink: #1b1a17;
+    --wash: rgba(240,238,230,.06); --shadow: 0 8px 28px rgba(0,0,0,.45);
+    --cat-conference: #6fa3e8; --cat-lab: #d97757; --cat-exam: #b06fd1;
+    --cat-academic: #c9a13c; --cat-travel: #3db8b8; --cat-deadline: #e06555;
+    --cat-holiday: #55c184; --cat-away: #e05252; --cat-other: #9c988b;
+    --good: #55c184; --warnbg: #4a3f22;
+    --s-meeting: #9085e9; --s-research: #d95926; --s-study: #3987e5; --s-away: #199e70;
+    --s-class: #c98500; --s-workout: #d55181; --s-chore: #008300; --s-other: #9c988b;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #1b1a17; --surface: #262521; --ink: #f0eee6; --ink2: #b7b3a6;
+  --hairline: #3a3831; --accent: #d97757; --accent-ink: #1b1a17;
+  --wash: rgba(240,238,230,.06); --shadow: 0 8px 28px rgba(0,0,0,.45);
+  --cat-conference: #6fa3e8; --cat-lab: #d97757; --cat-exam: #b06fd1;
+  --cat-academic: #c9a13c; --cat-travel: #3db8b8; --cat-deadline: #e06555;
+  --cat-holiday: #55c184; --cat-away: #e05252; --cat-other: #9c988b;
+  --good: #55c184; --warnbg: #4a3f22;
+  --s-meeting: #9085e9; --s-research: #d95926; --s-study: #3987e5; --s-away: #199e70;
+  --s-class: #c98500; --s-workout: #d55181; --s-chore: #008300; --s-other: #9c988b;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }  /* display 지정이 hidden 을 이겨버리는 사고 방지 */
+html, body { margin: 0; padding: 0; }
+/* 앱 셸 — 위(#top)·가운데(#main, 여기만 스크롤)·아래(#tabbar) 3단 고정.
+   예전엔 탭바가 position:fixed 였는데, iOS 홈 화면 앱에서 내용이 짧은 탭(캘린더)과
+   긴 탭(내 공간)의 뷰포트 처리가 달라 탭바가 위로 떴다 내려왔다 했다(PI 제보 2026-08-15).
+   구조로 바닥에 붙이면 내용 길이와 무관하게 항상 같은 자리·같은 높이다. */
+/* 문서 자체를 아예 못 움직이게 못박는다 — iOS 에서 손으로 당기면 페이지가 고무줄처럼
+   딸려 내려가며(러버밴딩) 탭바까지 같이 내려가고, 그 밑으로 검은 바탕이 드러났다
+   (PI 제보 2026-08-15). 스크롤은 오직 #main 안에서만 일어난다.
+   바탕색은 탭바와 같은 색 — 어떤 이유로든 틈이 생겨도 바의 연장처럼 보이게. */
+html, body {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  overflow: hidden; overscroll-behavior: none; touch-action: none;
+}
+body {
+  background: var(--surface); color: var(--ink); font-family: var(--sans);
+  font-size: 15px; line-height: 1.45;
+}
+/* inset:0 로 화면 전체(홈 인디케이터 영역 포함)를 덮는다 — 100svh 로 잡으면 iOS 홈 화면
+   앱에서 아래 안전영역만큼 앱이 못 미쳐, 탭바 밑에 검은 띠가 남고 바가 떠 보였다
+   (PI 사진 제보 2026-08-15). 안전영역 여백은 탭바 자신의 padding 이 책임진다. */
+/* --bar-drop: 화면 전체를 아래로 내리는 양(px). 기기마다 iOS 가 잡아두는 아래 영역이
+   달라 CSS 로는 끝까지 못 내리는 경우가 있어, 더보기에서 직접 조절한다(PI 요청). */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--page);
+  transform: translateY(var(--bar-drop, 0px));
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+b { font-weight: 650; }
+
+/* ─── 잠금 화면 ─── */
+#lock {
+  position: fixed; inset: 0; z-index: 50; background: var(--page);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.lock-card { width: min(340px, 100%); text-align: center; }
+.lock-logo { width: 76px; height: 76px; border-radius: 20px; box-shadow: var(--shadow); }
+.brand { font-family: var(--serif); font-weight: 600; letter-spacing: .2px; }
+h1.brand { font-size: 30px; margin: 14px 0 2px; }
+.lock-sub { color: var(--ink2); margin: 0 0 18px; }
+#lockPw {
+  flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+  font-size: 16px; outline: none;
+}
+#lockPw:focus { border-color: var(--accent); }
+#lockBtn {
+  padding: 12px 18px; border-radius: 12px; background: var(--accent);
+  color: var(--accent-ink); font-weight: 650;
+}
+#lockBtn[disabled] { opacity: .6; }
+.lock-msg { min-height: 1.3em; margin: 10px 0 0; color: var(--cat-deadline); font-size: 13px; }
+.lock-note { color: var(--ink2); font-size: 12px; margin-top: 14px; }
+.shake { animation: shake .35s; }
+@keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+
+/* ─── 상단 바 ─── */
+#top {
+  flex: none; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  background: color-mix(in srgb, var(--page) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+}
+.top-title { display: flex; align-items: baseline; gap: 7px; }
+.top-title .brand { font-size: 21px; }
+.brand-sub { font-size: 11px; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; }
+.top-actions { display: flex; align-items: center; gap: 4px; }
+.gen-at { font-size: 10.5px; color: var(--ink2); margin-right: 4px; white-space: nowrap; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 10px; font-size: 17px;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--ink2);
+}
+.icon-btn:active { background: var(--wash); }
+
+#staleBar {
+  margin: 10px 16px 0; padding: 8px 12px; border-radius: 10px;
+  background: var(--warnbg); font-size: 12.5px;
+}
+
+/* ─── 본문 공통 ─── */
+#main {
+  flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; touch-action: pan-y;   /* 스크롤은 여기서만 */
+  padding: 12px 16px 16px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: 16px; padding: 14px; margin-bottom: 12px;
+}
+.list { padding: 4px 0; }
+.list .row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 12px 14px; border-bottom: 1px solid var(--hairline); font-size: 15px;
+}
+.list .row:last-child { border-bottom: 0; }
+.list .row:active { background: var(--wash); }
+.row-ico { font-size: 19px; width: 26px; text-align: center; flex: none; }
+.row-main { flex: 1; min-width: 0; }
+.row-sub { color: var(--ink2); font-size: 12px; }
+.muted { color: var(--ink2); }
+
+/* ─── 캘린더 ─── */
+/* 캘린더 상단도 다른 탭 배너와 같은 카드·같은 높이 (PI 지시 2026-08-15) */
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px; padding: 9px 13px; margin-bottom: 10px;
+}
+.cal-head .icon-btn { font-size: 22px; }
+.cal-month { display: flex; align-items: center; gap: 8px; }
+#calMonth { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+.chip-btn {
+  font-size: 12px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--hairline); color: var(--ink2);
+}
+.chip-btn:active { background: var(--wash); }
+
+.week-strip {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  margin-bottom: 14px; touch-action: pan-y;
+}
+.wday { border-radius: 12px; padding: 6px 0 7px; text-align: center; position: relative; }
+.wday .dow { font-size: 10.5px; color: var(--ink2); display: block; }
+.wday .num { font-size: 15.5px; font-weight: 600; display: block; margin-top: 1px; }
+.wday.sun .dow, .wday.sun .num { color: var(--cat-away); }
+.wday.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.wday.sel { background: var(--accent); }
+.wday.sel .dow, .wday.sel .num { color: var(--accent-ink); }
+.wday .dots { display: flex; gap: 2.5px; justify-content: center; height: 5px; margin-top: 3px; }
+.wday .dots i { width: 4.5px; height: 4.5px; border-radius: 50%; background: var(--ink2); }
+.wday.sel .dots i { background: var(--accent-ink); }
+
+.day-title { font-family: var(--serif); font-size: 16.5px; font-weight: 600; margin: 4px 2px 10px; }
+.day-title .muted { font-family: var(--sans); font-size: 12.5px; font-weight: 400; }
+
+.allday { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.ad-chip {
+  display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
+  font-size: 12.5px; padding: 5px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--c, var(--cat-other)) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c, var(--cat-other)) 45%, var(--hairline));
+}
+.ad-chip .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.item {
+  display: flex; gap: 12px; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: 14px; padding: 10px 12px; margin-bottom: 8px;
+  width: 100%; text-align: left;
+}
+.item:active { background: var(--wash); }
+.item .when { flex: none; width: 46px; text-align: right; }
+.item .when .s { font-size: 13.5px; font-weight: 650; display: block; }
+.item .when .e { font-size: 11px; color: var(--ink2); display: block; }
+.item .bar { flex: none; width: 3.5px; border-radius: 2px; background: var(--c, var(--cat-other)); }
+.item .body { flex: 1; min-width: 0; }
+.item .t { font-size: 14.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .sub { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; align-items: center; font-size: 11.5px; color: var(--ink2); }
+.item.done { opacity: .55; }
+.item.dim { opacity: .72; }
+/* 부재 한 줄 — 라벨 + 사진들 (누르면 상세) */
+.away-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: 13px; padding: 8px 12px; margin-bottom: 10px;
+}
+.away-lb { font-size: 12px; color: var(--ink2); font-weight: 650; margin-right: 2px; }
+.aw-face { position: relative; flex: none; }
+.aw-face img, .aw-face .face-ini {
+  width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+  border: 1px solid var(--hairline); background: var(--wash);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--ink2);
+}
+.aw-face:active { opacity: .7; }
+.aw-sym { position: absolute; right: -4px; bottom: -3px; font-size: 11px; text-shadow: 0 0 3px var(--page); }
+
+/* 아젠다 줄 — 시간 | 작은 얼굴 | 내용 */
+.agrow {
+  display: flex; gap: 10px; align-items: center; width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-left: 3.5px solid var(--c, var(--hairline));
+  border-radius: 13px; padding: 8px 12px 8px 10px; margin-bottom: 7px;
+}
+button.agrow:active { background: var(--wash); }
+.agrow.dim { opacity: .58; }
+.ag-when { flex: none; width: 42px; text-align: right; }
+.ag-when b { display: block; font-size: 13px; font-weight: 700; line-height: 1.25; }
+.ag-when i { display: block; font-style: normal; font-size: 10.5px; color: var(--ink2); }
+.ag-face { flex: none; }
+.ag-face img, .ag-face .face-ini {
+  width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+  border: 1px solid var(--hairline); background: var(--wash);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--ink2);
+}
+.ag-body { flex: 1; min-width: 0; }
+.ag-body .t {
+  display: block; font-size: 13.5px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ag-body .sub { display: flex; flex-wrap: wrap; gap: 3px 6px; margin-top: 2px; font-size: 11px; color: var(--ink2); align-items: center; }
+
+.ini {
+  display: inline-flex; padding: 1.5px 7px; border-radius: 999px;
+  background: var(--wash); border: 1px solid var(--hairline);
+  font-size: 10.5px; font-weight: 650; color: var(--ink2);
+}
+.tag { font-size: 10.5px; padding: 1.5px 7px; border-radius: 999px; border: 1px solid var(--hairline); color: var(--ink2); }
+.tag.mv { color: var(--cat-academic); border-color: color-mix(in srgb, var(--cat-academic) 50%, var(--hairline)); }
+.empty { text-align: center; color: var(--ink2); padding: 34px 0 20px; font-size: 14px; }
+.day-sep { font-size: 12px; color: var(--ink2); margin: 16px 2px 8px; }
+
+/* ─── 섹션 제목 (내 공간 등) ─── */
+.mem-sec { font-size: 12px; color: var(--ink2); margin: 16px 2px 8px; }
+
+/* ─── 더보기 ─── */
+.more-note p { margin: 2px; color: var(--ink2); }
+.more-meta { text-align: center; color: var(--ink2); font-size: 11.5px; margin-top: 16px; }
+
+/* ─── 탭바 ─── */
+#tabbar {
+  flex: none; z-index: 20;
+  /* 탭 3개든(학생) 5개든(PI) 균등. minmax(0,1fr) 이어야 한다 — 그냥 1fr 은 최소폭이
+     글자 크기라, 고른 탭이 굵어지는 순간 칸 폭이 서로 밀린다(PI 지시 2026-08-15). */
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  /* 안전영역(env)을 더하면 아이폰에서 라벨 밑에 70pt 가까이 빈칸이 생겼다(PI 사진 실측).
+     앱이 이미 화면 전체(inset:0)를 덮고 바 배경도 맨 아래까지 닿으므로, 여백은
+     고정 6px 만 준다 — 홈 인디케이터는 이 위를 반투명하게 지나갈 뿐이다. */
+  padding: 2px 8px 2px; height: 44px;   /* 높이를 못박아 어떤 여백도 못 끼어들게 */
+  /* 반투명이면 배경과 구분이 안 돼 라벨만 공중에 뜬 것처럼 보였다(PI 제보) —
+     불투명한 표면색으로 채워 바가 바닥에 붙어 보이게 한다. */
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+}
+/* 아이콘·라벨 상자를 픽셀로 못박는다 — 이모지(📅🙋✅🔭)와 문자(☰)는 글리프 높이가
+   달라서, 폰트에 맡기면 탭마다 높이가 미세하게 달라진다(아이폰에서 특히). */
+.tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 11px; color: var(--ink2); padding: 4px 0; border-radius: 12px;
+  min-width: 0; overflow: hidden; height: 40px; justify-content: center; gap: 0;
+  padding: 0;
+}
+.tab .tab-ico { font-size: 17px; line-height: 20px; height: 20px; display: block; }
+.tab .tab-t {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10px; line-height: 12px; height: 12px;
+}
+.tab.on { color: var(--accent); font-weight: 650; }
+.tab:active { background: var(--wash); }
+
+/* ─── 시트 ─── */
+#sheetWrap { position: fixed; inset: 0; z-index: 40; }
+#sheetBack { position: absolute; inset: 0; background: rgba(0,0,0,.44); opacity: 0; transition: opacity .22s; }
+/* body 의 touch-action:none 때문에, 안에서 스크롤되는 것들은 각자 허용해 줘야 한다 */
+#sheet, #faceGrid { touch-action: pan-y; }
+.pick-row, .note-tbl { touch-action: pan-x; }
+.week-strip { touch-action: pan-y; }
+
+#sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--surface); border: 1px solid var(--hairline); border-bottom: 0;
+  border-radius: 20px 20px 0 0; box-shadow: var(--shadow);
+  max-height: 82vh; max-height: 82svh; overflow-y: auto;
+  padding: 8px 18px calc(env(safe-area-inset-bottom) + 20px);
+  transform: translateY(100%); transition: transform .26s cubic-bezier(.3,.9,.3,1);
+}
+#sheetWrap.open #sheetBack { opacity: 1; }
+#sheetWrap.open #sheet { transform: translateY(0); }
+#sheet::before {
+  content: ""; display: block; width: 40px; height: 4px; border-radius: 2px;
+  background: var(--hairline); margin: 6px auto 12px;
+}
+.sh-title { font-family: var(--serif); font-size: 19px; font-weight: 650; margin: 2px 0 2px; }
+.sh-sub { color: var(--ink2); font-size: 13px; margin-bottom: 12px; }
+.sh-sec { font-size: 12px; color: var(--ink2); margin: 16px 0 6px; }
+.sh-body { font-size: 14px; }
+.sh-body a { color: var(--cat-conference); word-break: break-all; }
+.sh-rows .r { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; align-items: baseline; }
+.sh-rows .r:last-child { border-bottom: 0; }
+.sh-rows .r .w { flex: none; width: 84px; color: var(--ink2); font-size: 12px; }
+.sh-photo { display: flex; align-items: center; gap: 14px; margin: 4px 0 8px; }
+.sh-photo img, .sh-photo .emoji-ph {
+  width: 74px; height: 74px; border-radius: 18px; object-fit: cover; background: var(--wash);
+  display: flex; align-items: center; justify-content: center; font-size: 44px; flex: none;
+}
+.big-ico { font-size: 46px; text-align: center; margin: 8px 0 4px; }
+.center { text-align: center; }
+
+/* ─── 얼굴 그리드 — 잠금 화면·캘린더 공용 ─── */
+.face-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 6px; margin: 8px 0 4px; }
+.face {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 5px 2px; border-radius: 14px;
+}
+.face:active { background: var(--wash); }
+.face-ph { position: relative; width: 62px; height: 62px; }
+.face-ph img, .face-ph .face-ini {
+  width: 62px; height: 62px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--hairline); background: var(--wash);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 19px; color: var(--ink2);
+}
+.face-tag { position: absolute; right: -5px; bottom: -2px; font-size: 16px; text-shadow: 0 0 4px var(--page); }
+.face-cnt {
+  position: absolute; right: -3px; top: -3px; min-width: 17px; height: 17px;
+  border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+  font-size: 10.5px; font-weight: 700; display: flex; align-items: center;
+  justify-content: center; padding: 0 4px;
+}
+.face-nm { font-size: 11px; color: var(--ink2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 잠금 화면 — 얼굴 고르고 비밀번호 */
+.lock-card { width: min(400px, 100%); }
+#faceGrid { max-height: 58vh; max-height: 58svh; overflow-y: auto; }
+.pw-who { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 12px; }
+.pw-who img, #pwEmoji {
+  width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex: none;
+  font-size: 28px; display: flex; align-items: center; justify-content: center; background: var(--wash);
+}
+.pw-who > div { flex: 1; }
+.pw-row { display: flex; gap: 8px; }
+
+/* 사람·하루 시트 블록 */
+.pd-item {
+  border: 1px solid var(--hairline); border-left: 3.5px solid var(--c, var(--hairline));
+  border-radius: 12px; padding: 9px 12px; margin: 8px 0; text-align: left;
+}
+.pd-when { font-size: 12px; font-weight: 700; color: var(--ink2); }
+.pd-t { font-size: 14.5px; font-weight: 600; margin-top: 1px; }
+.pd-sub { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; font-size: 11.5px; color: var(--ink2); align-items: center; }
+.pd-note { margin-top: 6px; font-size: 12.5px; white-space: pre-wrap; word-break: break-word; color: var(--ink2); }
+.pd-note a { color: var(--cat-conference); word-break: break-all; }
+
+/* 노트 본문 */
+.note-body { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; line-height: 1.55; margin-top: 6px; }
+.note-body a { color: var(--cat-conference); word-break: break-all; }
+.note-tbl {
+  white-space: pre; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.5; background: var(--wash); border: 1px solid var(--hairline);
+  border-radius: 10px; padding: 8px 10px; margin: 6px 0;
+}
+.img-ph {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ink2);
+  border: 1px dashed var(--hairline); border-radius: 8px; padding: 2px 8px; margin: 2px 0;
+}
+
+/* 주간 파이 */
+.pies { display: flex; justify-content: center; gap: 18px; margin: 4px 0 10px; }
+/* 3주치는 좁은 폰에서도 한 줄에 들어가게 */
+.pies3 { gap: 6px; }
+.pies3 .pie-box { flex: 1; min-width: 0; }
+.pies3 .donut { width: 100%; max-width: 104px; height: auto; margin: 0 auto; }
+.pie-box { text-align: center; }
+.donut { width: 118px; height: 118px; display: block; }
+.donut-total { fill: var(--ink); font: 700 16px var(--sans); }
+.pie-lb { font-size: 12px; color: var(--ink2); margin-top: 4px; }
+.pleg { border-top: 1px solid var(--hairline); padding-top: 8px; }
+.pleg .r { display: flex; align-items: center; gap: 8px; padding: 3.5px 0; font-size: 12.5px; }
+.pleg .dot { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+.pleg .nm { flex: 1; min-width: 0; }
+.pleg .vals { color: var(--ink2); }
+.pleg .vals b { color: var(--ink); font-weight: 650; }
+.pie-note { font-size: 11px; color: var(--ink2); margin: 8px 0 0; }
+
+/* 🔭 과제찾기 — 줄 안에서 관심/포기 */
+.gr-row { align-items: center; gap: 8px; }
+.gr-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.gr-btns { flex: none; display: flex; gap: 6px; }
+.gr-btns button {
+  width: 34px; height: 34px; border-radius: 10px; font-size: 14px;
+  border: 1px solid var(--hairline); color: var(--ink2);
+}
+.gr-btns button:active { background: var(--wash); }
+.gr-star.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--hairline)); }
+.gr-drop { color: var(--cat-away); border-color: color-mix(in srgb, var(--cat-away) 40%, var(--hairline)); }
+
+/* 아래 바 위치 조절 */
+.bar-adj { display: flex; align-items: center; gap: 8px; flex: none; }
+.bar-adj button {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--hairline);
+  font-size: 13px; color: var(--ink2);
+}
+.bar-adj button:active { background: var(--wash); }
+.bar-adj b { min-width: 26px; text-align: center; font-size: 13px; }
+
+/* ✅ 승인 대기 */
+.tab { position: relative; }
+.tab-badge {
+  position: absolute; top: 0; right: 22%; min-width: 16px; height: 16px;
+  border-radius: 8px; background: var(--cat-deadline); color: #fff;
+  font-size: 10px; font-weight: 700; display: flex; align-items: center;
+  justify-content: center; padding: 0 4px;
+}
+.agrow.ap { align-items: center; }
+.agrow.ap .ag-body .t { white-space: normal; }        /* 요청 제목은 줄바꿈 허용 */
+.agrow.ap .ag-body .sub span { display: block; }
+.ap-btns { flex: none; display: flex; gap: 6px; }
+.ap-yes, .ap-no {
+  width: 38px; height: 38px; border-radius: 12px; font-size: 17px; font-weight: 700;
+  border: 1px solid var(--hairline); display: flex; align-items: center; justify-content: center;
+}
+.ap-yes { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, var(--hairline)); }
+.ap-no { color: var(--cat-away); border-color: color-mix(in srgb, var(--cat-away) 45%, var(--hairline)); }
+.ap-yes:active, .ap-no:active { background: var(--wash); }
+
+/* PI 쓰기 — 미팅 만들기·옮기기·취소 */
+.chip-btn.add { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--hairline)); font-weight: 700; }
+.pick-row { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
+.pface {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--ink2); padding: 4px 3px; border-radius: 12px; position: relative;
+  max-width: 60px;
+}
+.pface span { max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pface img, .pface .face-ini {
+  width: 46px; height: 46px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--hairline); background: var(--wash);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+}
+.pface.stu img, .pface.stu .face-ini { border-color: var(--accent); }
+.pface.stu::after, .pface.att::after {
+  position: absolute; top: -2px; right: 2px; font-size: 13px; text-shadow: 0 0 3px var(--surface);
+}
+.pface.stu::after { content: "★"; color: var(--accent); }
+.pface.att img, .pface.att .face-ini { border-color: var(--cat-holiday); }
+.pface.att::after { content: "✓"; color: var(--cat-holiday); font-weight: 800; }
+.frm label { display: block; margin: 11px 0 0; font-size: 12.5px; color: var(--ink2); }
+.frm input, .frm textarea, .frm select {
+  width: 100%; margin-top: 4px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--hairline); background: var(--page); color: var(--ink);
+  /* 16px 밑으로 내리지 말 것 — 아이폰은 그보다 작은 입력칸을 누르면 화면을 확대해 버린다.
+     앱 셸이 고정(inset:0)이라 확대된 만큼 오른쪽이 잘린 채로 남는다(PI 제보 2026-08-22:
+     "날짜 박스가 오른쪽이 좀 잘려"). 잠금 화면 #lockPw 가 16px 인 것도 같은 이유. */
+  font-size: 16px; font-family: var(--sans);
+}
+/* 날짜 칸은 아이폰 기본 장식(달력 아이콘·안쪽 여백)이 상자보다 넓어질 때가 있다 —
+   장식을 걷어내고 상자 안에 가둔다. 눌렀을 때 뜨는 날짜 선택기는 그대로 뜬다. */
+.frm input[type="date"] {
+  -webkit-appearance: none; appearance: none;
+  min-width: 0; max-width: 100%; text-align: left;
+}
+/* 아이폰은 날짜 값을 칸 가운데에 놓고 오른쪽에 여백을 크게 잡는다 — 왼쪽으로 붙인다 */
+.frm input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.frm label.inline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.frm label.inline input, .frm label.inline select { width: auto; margin-top: 0; max-width: 100%; }
+/* 한 줄에 든 날짜 칸(반복 '까지')은 좁은 폰에서 줄바꿈으로 내려오게 — 억지로 버티면 삐져나간다 */
+.frm input.until { flex: 1 1 140px; min-width: 0; }
+.tsel select {
+  padding: 9px 6px; border-radius: 10px; border: 1px solid var(--hairline);
+  background: var(--page); color: var(--ink); font-size: 16px;   /* 확대 방지 — 위 주석 참고 */
+}
+.wr-row { display: flex; gap: 8px; margin-top: 16px; }
+.wr-btn {
+  flex: 1; padding: 11px; border-radius: 12px; border: 1px solid var(--hairline);
+  font-weight: 650; font-size: 13.5px; text-align: center;
+}
+.wr-btn:active { background: var(--wash); }
+.wr-btn.danger { color: var(--cat-away); border-color: color-mix(in srgb, var(--cat-away) 50%, var(--hairline)); }
+.wr-btn.wide { display: block; width: 100%; margin-top: 8px; }
+#toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 86px); z-index: 60;
+  background: var(--ink); color: var(--page); padding: 10px 16px; border-radius: 999px;
+  font-size: 13px; box-shadow: var(--shadow); max-width: 88vw; text-align: center;
+}
+
+/* 할 일 → 캘린더 담기 */
+.ics-btn {
+  display: block; width: 100%; margin-top: 16px; padding: 12px;
+  border-radius: 12px; background: var(--accent); color: var(--accent-ink);
+  font-weight: 650; text-align: center; font-size: 14.5px;
+}
+.ics-btn:active { opacity: .85; }
+
+/* 연구 성과 */
+.ach-counts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.ach-li { display: flex; gap: 7px; padding: 6px 0 0; font-size: 13px; align-items: baseline; }
+.ach-li .muted { display: block; font-size: 11px; }
+
+/* 탭 상단 배너 — 다섯 탭이 같은 높이여야 한다 (PI 지시 2026-08-15).
+   높이는 컴팩트하게 60px: 사진 40px + 위아래 여백 10px (PI 지시, 2차). */
+/* min-height 로는 줄 수(1줄/2줄)에 따라 또 벌어진다 — 높이를 못박는다 */
+.my-head, .more-note {
+  height: 60px; display: flex; align-items: center; gap: 11px;
+  padding: 9px 13px; margin-bottom: 10px; overflow: hidden;
+}
+.more-note p { font-size: 12px; line-height: 1.35; margin: 0; }
+.my-head > div, .more-note > p { flex: 1; min-width: 0; }
+
+/* 내 공간 */
+.my-face, .my-head .face-ini {
+  width: 40px; height: 40px; border-radius: 12px; object-fit: cover; flex: none;
+  font-size: 20px; display: inline-flex; align-items: center; justify-content: center; background: var(--wash);
+}
+.my-head b { font-size: 13.5px; line-height: 18px; }
+.my-head .muted { font-size: 11.5px; line-height: 15px; }
+.my-head > div { overflow: hidden; }
+.my-warn { background: var(--warnbg); border-radius: 12px; padding: 10px 13px; font-size: 13px; margin-bottom: 12px; }
+.plan-day { display: flex; gap: 8px; padding: 5px 0; align-items: baseline; }
+.plan-d { flex: none; width: 64px; font-size: 12px; color: var(--ink2); }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.plan-chip { font-size: 11.5px; padding: 2.5px 8px; border-radius: 999px; background: var(--wash); border: 1px solid var(--hairline); }
+.plan-chip.done { opacity: .5; text-decoration: line-through; }
+.empty.small { padding: 12px 0; font-size: 13px; }
+
+/* ─── 🕐 시간 변경 타임라인 — 그날 캘린더 위에서 블록을 끌어 옮긴다 ───
+   블록만 touch-action:none 이라 끌 때 브라우저가 스크롤로 채가지 않고, 나머지 칸은
+   평소대로 위아래로 넘길 수 있다. */
+.tl-top { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 6px; flex-wrap: wrap; }
+.tl-top b { font-size: 15px; }
+.tl-top .muted { font-size: 11.5px; }
+.tl-wrap {
+  position: relative; height: 46vh; max-height: 340px; overflow-y: auto;
+  border: 1px solid var(--hairline); border-radius: 14px; background: var(--page);
+  touch-action: pan-y; overscroll-behavior: contain;
+}
+.tl-grid { position: relative; margin-left: 38px; }
+.tl-hour { position: absolute; left: -38px; right: 0; border-top: 1px solid var(--hairline); }
+.tl-hour i {
+  position: absolute; left: 4px; top: -7px; font-style: normal;
+  font-size: 10.5px; color: var(--ink2); background: var(--page); padding: 0 2px;
+}
+.tl-now { position: absolute; left: -6px; right: 0; border-top: 2px solid var(--cat-deadline); }
+.tl-now::before {
+  content: ""; position: absolute; left: -2px; top: -5px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--cat-deadline);
+}
+.tl-ev {
+  position: absolute; left: 2px; right: 4px; overflow: hidden;
+  border-radius: 7px; padding: 2px 6px; font-size: 10.5px; line-height: 1.25;
+  color: var(--ink2); background: color-mix(in srgb, var(--c, var(--cat-other)) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c, var(--cat-other)) 40%, var(--hairline));
+}
+.tl-me {
+  position: absolute; left: 14px; right: 10px; touch-action: none; cursor: grab;
+  border-radius: 10px; padding: 3px 8px; z-index: 3;
+  background: color-mix(in srgb, var(--accent) 82%, var(--surface));
+  border: 1px solid var(--accent); color: var(--accent-ink);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .22);
+}
+.tl-me.drag { box-shadow: 0 8px 20px rgba(0, 0, 0, .34); opacity: .95; }
+.tl-lb { font-size: 12px; font-weight: 700; }
+/* 아래 손잡이 — 길이 조절. 손가락에 잡히게 블록 밖으로 조금 넘겨 잡는다 */
+.tl-grip { position: absolute; left: 0; right: 0; bottom: -6px; height: 18px; }
+.tl-grip::after {
+  content: ""; position: absolute; left: 50%; bottom: 7px; width: 30px; height: 3px;
+  margin-left: -15px; border-radius: 2px; background: var(--accent-ink); opacity: .75;
+}
+
+/* ─── 🖥️ 서버 — 카드 하나 = 서버 하나. 왼쪽 색 띠로 상태를 한눈에 (연구실 전체 보기와 같은 규약) ─── */
+.sv-tag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--hairline); margin-left: 5px; }
+.sv-tag.warn { background: var(--warnbg); }
+.sv-tag.bad { color: var(--cat-deadline); border-color: var(--cat-deadline); }
+.svc {
+  display: block; width: 100%; text-align: left; font: inherit; color: inherit;
+  padding: 11px 13px; margin-bottom: 10px;
+  border-left: 4px solid var(--sv, var(--hairline));
+}
+.svc:active { background: var(--wash); }
+.svc.sev-ok { --sv: var(--good); }
+.svc.sev-warn { --sv: var(--cat-academic); }
+.svc.sev-bad { --sv: var(--cat-deadline); }
+.svc.sev-maint { --sv: var(--cat-other); }
+.svc.sev-none { --sv: var(--hairline); }
+.sv-h { display: flex; align-items: baseline; gap: 8px; }
+.sv-h b { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-verdict { flex: none; font-size: 12px; color: var(--ink2); }
+.sv-slotrow { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
+.sv-slots { display: flex; gap: 3px; flex: 1; min-width: 0; }
+/* 서버실 LED 느낌 — 쓰는 칸은 초록, 예약 밖은 주황, 빈칸은 그냥 회색 */
+.sv-slots i { flex: 1; height: 10px; border-radius: 3px; background: var(--wash); border: 1px solid var(--hairline); }
+.sv-slots i.on { background: var(--good); border-color: var(--good); }
+.sv-slots i.ext { background: var(--cat-academic); border-color: var(--cat-academic); }
+.sv-gc { flex: none; font-size: 11.5px; color: var(--ink2); }
+.sv-gc b { color: var(--cat-academic); font-weight: 600; }
+.sv-slotrow.big { margin: 12px 0 6px; }
+.sv-slotrow.big .sv-slots i { height: 16px; border-radius: 4px; }
+.sv-ms { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 8px; }
+.sv-m {
+  font-size: 11.5px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+  background: var(--wash); border: 1px solid var(--hairline);
+}
+.sv-m.warn { background: var(--warnbg); }
+.sv-m.bad { color: var(--cat-deadline); border-color: var(--cat-deadline); }
+.sv-who { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 9px; }
+.sv-p { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
+.sv-face {
+  width: 22px; height: 22px; border-radius: 7px; object-fit: cover; flex: none;
+  font-size: 10px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--wash);
+}
+.sv-pn { font-size: 11.5px; color: var(--ink2); white-space: nowrap; }
+.sv-pn i { font-style: normal; color: var(--ink); margin-left: 3px; }
+.sv-why { display: block; margin-top: 8px; font-size: 11.5px; color: var(--ink2); }
+.sv-tbl { margin: 4px 0 2px; }
+.sv-tr { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--hairline); font-size: 13.5px; }
+.sv-tr:last-child { border-bottom: 0; }
+.sv-tr > span { color: var(--ink2); }
+.sv-jrow { display: flex; gap: 9px; align-items: center; padding: 6px 0; }
+.sv-jb { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.sv-jb .muted { font-size: 11.5px; }
+
+/* 언어 전환 */
+.lang-btn { font-size: 12.5px; font-weight: 700; width: auto; padding: 0 8px; }
+.lock-lang {
+  margin-top: 18px; font-size: 12.5px; color: var(--ink2);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+@media (min-width: 640px) {  /* 태블릿·데스크톱에서 폭 고정 (앱 셸 자체를 가운데로) */
+  #app { left: 50%; right: auto; width: 560px; transform: translateX(-50%); }
+}
